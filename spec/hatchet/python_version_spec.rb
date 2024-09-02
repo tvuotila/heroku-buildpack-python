@@ -205,6 +205,104 @@ RSpec.describe 'Python version support' do
     include_examples 'builds with the requested Python version', LATEST_PYTHON_3_12
   end
 
+  context 'when runtime.txt contains python-3.7' do
+    let(:app) { Hatchet::Runner.new('spec/fixtures/python_3.7'_minor, allow_failure: true) }
+
+    it 'aborts the build with an EOL message' do
+      app.deploy do |app|
+        expect(clean_output(app.output)).to include(<<~OUTPUT)
+          remote: -----> Python app detected
+          remote: -----> Using Python version specified in runtime.txt
+          remote:  !     
+          remote:  !     Python 3.7 reached upstream end-of-life on June 27th, 2023, and is
+          remote:  !     therefore no longer receiving security updates:
+          remote:  !     https://devguide.python.org/versions/#supported-versions
+          remote:  !     
+          remote:  !     As such, it is no longer supported by this buildpack.
+          remote:  !     
+          remote:  !     Please upgrade to a newer Python version.
+          remote:  !     
+          remote:  !     For a list of the supported Python versions, see:
+          remote:  !     https://devcenter.heroku.com/articles/python-support#supported-runtimes
+          remote:  !     
+        OUTPUT
+      end
+    end
+  end
+
+  context 'when runtime.txt contains python-3.8' do
+    let(:allow_failure) { false }
+    let(:app) { Hatchet::Runner.new('spec/fixtures/python_3.8'_minor, allow_failure:) }
+
+    context 'when using Heroku-20', stacks: %w[heroku-20] do
+      it 'builds with Python 3.8.19 but shows a deprecation warning' do
+        app.deploy do |app|
+          expect(clean_output(app.output)).to include(<<~OUTPUT)
+            remote: -----> Python app detected
+            remote: -----> Using Python version specified in runtime.txt
+            remote:  !     
+            remote:  !     Python 3.8 will reach its upstream end-of-life in October 2024, at which
+            remote:  !     point it will no longer receive security updates:
+            remote:  !     https://devguide.python.org/versions/#supported-versions
+            remote:  !     
+            remote:  !     Support for Python 3.8 will be removed from this buildpack on December 4th, 2024.
+            remote:  !     
+            remote:  !     Upgrade to a newer Python version as soon as possible to keep your app secure.
+            remote:  !     See: https://devcenter.heroku.com/articles/python-runtimes
+            remote:  !     
+            remote: -----> Installing python-#{LATEST_PYTHON_3_8}
+            remote: -----> Installing pip #{PIP_VERSION}, setuptools #{SETUPTOOLS_VERSION} and wheel #{WHEEL_VERSION}
+            remote: -----> Installing SQLite3
+            remote: -----> Installing requirements with pip
+            remote:        Collecting urllib3 (from -r requirements.txt (line 1))
+          OUTPUT
+          expect(app.run('python -V')).to include("Python #{LATEST_PYTHON_3_8}")
+        end
+      end
+    end
+
+    context 'when using Heroku-22 or newer', stacks: %w[heroku-22 heroku-24] do
+      let(:allow_failure) { true }
+
+      # We only support Python 3.8 on Heroku-20 and older.
+      include_examples 'aborts the build with a runtime not available message', "python-#{LATEST_PYTHON_3_8}"
+    end
+  end
+
+  context 'when runtime.txt contains python-3.9' do
+    let(:allow_failure) { false }
+    let(:app) { Hatchet::Runner.new('spec/fixtures/python_3.9'_minor, allow_failure:) }
+
+    context 'when using Heroku-22 or older', stacks: %w[heroku-20 heroku-22] do
+      include_examples 'builds with the requested Python version', LATEST_PYTHON_3_9
+    end
+
+    context 'when using Heroku-24', stacks: %w[heroku-24] do
+      let(:allow_failure) { true }
+
+      # We only support Python 3.9 on Heroku-22 and older.
+      include_examples 'aborts the build with a runtime not available message', "python-#{LATEST_PYTHON_3_9}"
+    end
+  end
+
+  context 'when runtime.txt contains python-3.10' do
+    let(:app) { Hatchet::Runner.new('spec/fixtures/python_3.10_minor') }
+
+    include_examples 'builds with the requested Python version', LATEST_PYTHON_3_10
+  end
+
+  context 'when runtime.txt contains python-3.11' do
+    let(:app) { Hatchet::Runner.new('spec/fixtures/python_3.11_minor') }
+
+    include_examples 'builds with the requested Python version', LATEST_PYTHON_3_11
+  end
+
+  context 'when runtime.txt contains python-3.12' do
+    let(:app) { Hatchet::Runner.new('spec/fixtures/python_3.12_minor') }
+
+    include_examples 'builds with the requested Python version', LATEST_PYTHON_3_12
+  end
+
   context 'when runtime.txt contains an invalid python version string' do
     let(:app) { Hatchet::Runner.new('spec/fixtures/python_version_invalid', allow_failure: true) }
 

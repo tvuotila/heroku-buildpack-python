@@ -25,6 +25,29 @@ function eol_python_version_error() {
   exit 1
 }
 
+# Add latest patch version number to the Python version if patch number is omitted.
+case "${PYTHON_VERSION}" in
+  python-3.12)
+    PYTHON_VERSION="${LATEST_312}"
+    ;;
+  python-3.11)
+    PYTHON_VERSION="${LATEST_311}"
+    ;;
+  python-3.10)
+    PYTHON_VERSION="${LATEST_310}"
+    ;;
+  python-3.9)
+    PYTHON_VERSION="${LATEST_39}"
+    ;;
+  python-3.8)
+    PYTHON_VERSION="${LATEST_38}"
+    ;;
+  python-3.7)
+    PYTHON_VERSION="${LATEST_37}"
+    ;;
+  *) ;;
+esac
+
 # We check for EOL prior to checking if the archive exists on S3, to ensure the more specific EOL error
 # message is still shown for newer stacks where the EOL Python versions might not have been built.
 case "${PYTHON_VERSION}" in
